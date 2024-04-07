@@ -1,36 +1,82 @@
-// Import necessary modules and types
+import { PrismaClient } from "@prisma/client";
+import express from "express";
 
-import express, { Router } from "express";
-import {
-  getUsers,
-  getUserById,
-  createUser,
-  deleteUser,
-  updateUser,
-} from "./controllers/index.controllers";
-
-// Create an Express application
+const prisma = new PrismaClient();
 const app = express();
-
-// Create a Router instance for handling user-related routes
-const userRouter = Router();
-
-// Configure middleware for parsing JSON and URL-encoded data
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
-// Define routes for task operations using the userRouter
-userRouter.get("/user", getUsers);
-userRouter.get("/user/:id", getUserById);
-userRouter.post("/user", createUser);
-userRouter.put("/user/:id", updateUser);
-userRouter.delete("/user/:id", deleteUser);
-
-// Use the userRouter for paths starting with '/api'
-app.use(userRouter);
-
-// Set up the Express application to listen on port 3000
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+//* 1. Fetches all released songs.
+app.get("/playlist", async (req, res) => {
+  const users = await prisma.user.findMany();
+  res.json({
+    success: true,
+    payload: users,
+    message: "Operation Successful",
+  });
 });
+
+//* 2. Fetches a specific song by its ID.
+app.get(`/user/:id`, async (req, res) => {
+  const { id } = req.params;
+  const user = await prisma.user.findFirst({
+    where: { id: Number(id) },
+  });
+  res.json({
+    success: true,
+    payload: user,
+  });
+});
+
+//* 3. Creates a new user.
+app.post(`/user`, async (req, res) => {
+  const result = await prisma.user.create({
+    data: { ...req.body },
+  });
+  res.json({
+    success: true,
+    payload: result,
+  });
+});
+
+//* 6. Deletes a song by its ID.
+app.delete(`/user/:id`, async (req, res) => {
+  const { id } = req.params;
+  const user = await prisma.user.delete({
+    where: { id: Number(id) },
+  });
+  res.json({
+    success: true,
+    payload: user,
+  });
+});
+
+//* 6. Deletes a song by its ID.
+app.delete(`/user/:id`, async (req, res) => {
+  const { id } = req.params;
+  const { email, password } = req.body;
+  const user = await prisma.user.update({
+    where: { id: Number(id) },
+    data: {
+      password,
+      email,
+    },
+  });
+  res.json({
+    success: true,
+    payload: user,
+  });
+});
+
+app.use((req, res, next) => {
+  res.status(404);
+  return res.json({
+    success: false,
+    payload: null,
+    message: `API SAYS: Endpoint not found for path: ${req.path}`,
+  });
+});
+
+// #6
+app.listen(3000, () =>
+  console.log("REST API server ready at: http://localhost:3000")
+);
